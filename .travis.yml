@@ -2,7 +2,7 @@ dist: trusty
 sudo: false
 language: python
 python:
-  - "3.6"
+  - "3.4"
 
 install:
   - pip install pyyaml
@@ -21,7 +21,7 @@ env:
     - REPO_TYPE=external/*
     - REPO_TYPE=*.py
 
-script: pytest -s -v tests/$REPO_TYPE
+script: pytest -s -v tests/${REPO_TYPE}
 
 jobs:
   include:
