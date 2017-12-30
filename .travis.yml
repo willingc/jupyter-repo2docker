@@ -8,10 +8,11 @@ install:
   - pip install pyyaml
   - pip install -e .
 
+script: pytest -s -v tests/${REPO_TYPE}
+
 jobs:
   include:
     - stage: test
-      script: pytest -s -v tests/${REPO_TYPE}
       env: REPO_TYPE=
     - stage: deploy
       script: skip
