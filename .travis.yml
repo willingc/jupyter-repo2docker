@@ -1,7 +1,6 @@
 dist: trusty
 sudo: false
 language: python
-cache: false
 python:
   - 3.6
 
@@ -26,6 +25,10 @@ script: pytest -s -v tests/${REPO_TYPE}
 
 jobs:
   include:
+    - stage: unit tests
+      script: echo one
+    - stage: test
+      script: pytest -s -v tests/${REPO_TYPE}
     - stage: deploy
       script: skip
       if: type = push
