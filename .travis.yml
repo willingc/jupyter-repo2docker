@@ -20,8 +20,7 @@ env:
     - REPO_TYPE=dockerfile
     - REPO_TYPE=external/*
     - REPO_TYPE=*.py
-    exclude:
-      - REPO_TYPE=
+    - exclude: REPO_TYPE=
 
 script: pytest -s -v tests/${REPO_TYPE}
 
