@@ -21,11 +21,13 @@ jobs:
     - stage: test
       script: pytest -s -v tests/${REPO_TYPE}
       env:
+        matrix:
         - REPO_TYPE=conda
         - REPO_TYPE=venv
     - stage: test 2
       script: pytest -s -v tests/${REPO_TYPE}
       env:
+        matrix:
         - REPO_TYPE=julia
         - REPO_TYPE=dockerfile
         - REPO_TYPE=external/*
