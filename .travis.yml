@@ -21,16 +21,16 @@ env:
     - REPO_TYPE=external/*
     - REPO_TYPE=*.py
 
-script: pytest -s -v tests/${REPO_TYPE}
+script: pytest -s -v tests/$REPO_TYPE
 
-# jobs:
-#   include:
-#     - stage: deploy
-#       script: skip
-#       if: type = push
-#       env: REPO_TYPE=
-#       deploy:
-#         provider: script
-#         script: "./travis/travis-script.bash"
-#         on:
-#           branch: master
+jobs:
+  include:
+    - stage: deploy
+      script: skip
+      if: type = push
+      env: REPO_TYPE=
+      deploy:
+        provider: script
+        script: "./travis/travis-script.bash"
+        on:
+          branch: master
