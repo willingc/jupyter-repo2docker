@@ -1,5 +1,5 @@
 dist: trusty
-sudo: required
+sudo: false
 language: python
 python:
   - "3.6"
@@ -7,22 +7,6 @@ python:
 install:
   - pip install pyyaml
   - pip install -e .
-
-script: pytest -s -v tests/${REPO_TYPE}
-
-jobs:
-  include:
-    - stage: test
-      env: REPO_TYPE=
-    - stage: deploy
-      script: skip
-      if: type = push
-      env: REPO_TYPE=
-      deploy:
-        provider: script
-        script: "./travis/travis-script.bash"
-        on:
-          branch: master
 
 env:
   global:
@@ -36,3 +20,19 @@ env:
     - REPO_TYPE=dockerfile
     - REPO_TYPE=external/*
     - REPO_TYPE=*.py
+    exclude:
+      - REPO_TYPE=
+
+script: pytest -s -v tests/${REPO_TYPE}
+
+jobs:
+  include:
+    - stage: deploy
+      script: skip
+      if: type = push
+      env: REPO_TYPE=
+      deploy:
+        provider: script
+        script: "./travis/travis-script.bash"
+        on:
+          branch: master
