@@ -21,17 +21,15 @@ jobs:
     - stage: test
       script: pytest -s -v tests/${REPO_TYPE}
       env:
-        matrix:
-          - REPO_TYPE=conda
-          - REPO_TYPE=venv
+        - REPO_TYPE=conda
+        - REPO_TYPE=venv
     - stage: test 2
       script: pytest -s -v tests/${REPO_TYPE}
       env:
-        matrix:
-          - REPO_TYPE=julia
-          - REPO_TYPE=dockerfile
-          - REPO_TYPE=external/*
-          - REPO_TYPE=*.py
+        - REPO_TYPE=julia
+        - REPO_TYPE=dockerfile
+        - REPO_TYPE=external/*
+        - REPO_TYPE=*.py
     - stage: deploy
       script: skip
       if: type = push
