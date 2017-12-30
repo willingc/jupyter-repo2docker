@@ -28,9 +28,7 @@ jobs:
     - stage: test
       script: pytest -s -v tests/${REPO_TYPE}
       env:
-        matrix:
-          - REPO_TYPE=conda
-          - REPO_TYPE=venv
+        exclude: REPO_TYPE=
     - stage: deploy
       script: skip
       if: type = push
