@@ -23,18 +23,26 @@ from docker.errors import DockerException
 import escapism
 from pythonjsonlogger import jsonlogger
 
-from traitlets import Any, Dict, Int,  List, Unicode, default
+from traitlets import Any, Dict, Int, List, Unicode, default
 from traitlets.config import Application
 
 from . import __version__
 from .buildpacks import (
-    PythonBuildPack, DockerBuildPack, LegacyBinderDockerBuildPack,
-    CondaBuildPack, JuliaBuildPack, Python2BuildPack, BaseImage,
-    RBuildPack
+    PythonBuildPack,
+    DockerBuildPack,
+    LegacyBinderDockerBuildPack,
+    CondaBuildPack,
+    JuliaBuildPack,
+    Python2BuildPack,
+    BaseImage,
+    RBuildPack,
 )
 from .utils import (
-    execute_cmd, ByteSpecification, maybe_cleanup, is_valid_docker_image_name,
-    validate_and_generate_port_mapping
+    execute_cmd,
+    ByteSpecification,
+    maybe_cleanup,
+    is_valid_docker_image_name,
+    validate_and_generate_port_mapping,
 )
 
 
@@ -58,9 +66,8 @@ class Repo2Docker(Application):
 
         The default is to use the system's temporary directory. Should be
         somewhere ephemeral, such as /tmp.
-        """
+        """,
     )
-
     buildpacks = List(
         [
             LegacyBinderDockerBuildPack,
@@ -74,17 +81,15 @@ class Repo2Docker(Application):
         config=True,
         help="""
         Ordered list of BuildPacks to try when building a git repository.
-        """
+        """,
     )
-
     default_buildpack = Any(
         PythonBuildPack,
         config=True,
         help="""
         The default build pack to use when no other buildpacks are found.
-        """
+        """,
     )
-
     build_memory_limit = ByteSpecification(
         0,
         help="""
@@ -92,9 +97,8 @@ class Repo2Docker(Application):
 
         Set to 0 for no limits.
         """,
-        config=True
+        config=True,
     )
-
     volumes = Dict(
         {},
         help="""
@@ -110,9 +114,8 @@ class Repo2Docker(Application):
         destination is resolved relative to the working directory of the 
         image - ($HOME by default)
         """,
-        config=True
+        config=True,
     )
-
     user_id = Int(
         help="""
         UID of the user to create inside the built image.
@@ -123,7 +126,7 @@ class Repo2Docker(Application):
 
         Might not affect Dockerfile builds.
         """,
-        config=True
+        config=True,
     )
 
     @default('user_id')
@@ -144,7 +147,7 @@ class Repo2Docker(Application):
         Defaults to username of currently running user, since that is the most
         common case when running repo2docker manually.
         """,
-        config=True
+        config=True,
     )
 
     @default('user_name')
@@ -161,34 +164,44 @@ class Repo2Docker(Application):
 
         Can be used to customize the resulting image after all
         standard build steps finish.
-        """
+        """,
     )
 
     def fetch(self, url, ref, checkout_path):
-        """Check out a repo using url and ref to the checkout_path location"""
+        """Check out a repo using url and ref to the checkout_path location
+
+        Args:
+            url (str): url of the source repository
+            ref (str): commit reference or SHA1 in the source repository
+            checkout_path (str): path to checkout the repository
+
+        """
         try:
-            for line in execute_cmd(['git', 'clone', '--recursive', url, checkout_path],
-                                    capture=self.json_logs):
+            for line in execute_cmd(
+                ['git', 'clone', '--recursive', url, checkout_path],
+                capture=self.json_logs,
+            ):
                 self.log.info(line, extra=dict(phase='fetching'))
         except subprocess.CalledProcessError:
-            self.log.error('Failed to clone repository!',
-                           extra=dict(phase='failed'))
+            self.log.error('Failed to clone repository!', extra=dict(phase='failed'))
             sys.exit(1)
 
         if ref:
             try:
-                for line in execute_cmd(['git', 'reset', '--hard', ref],
-                                        cwd=checkout_path,
-                                        capture=self.json_logs):
+                for line in execute_cmd(
+                    ['git', 'reset', '--hard', ref],
+                    cwd=checkout_path,
+                    capture=self.json_logs,
+                ):
                     self.log.info(line, extra=dict(phase='fetching'))
             except subprocess.CalledProcessError:
-                self.log.error('Failed to check out ref %s', ref,
-                               extra=dict(phase='failed'))
+                self.log.error(
+                    'Failed to check out ref %s', ref, extra=dict(phase='failed')
+                )
                 sys.exit(1)
 
     def validate_image_name(self, image_name):
-        """
-        Validate image_name read by argparse
+        """Validate image_name read by argparse
 
         Note: Container names must start with an alphanumeric character and
         can then use _ . or - in addition to alphanumeric.
@@ -208,160 +221,162 @@ class Repo2Docker(Application):
                                [a-zA-Z0-9][a-zA-Z0-9_.-]+
         """
         if not is_valid_docker_image_name(image_name):
-            msg = ("%r is not a valid docker image name. Image name"
-                   "must start with an alphanumeric character and"
-                   "can then use _ . or - in addition to alphanumeric." % image_name)
+            msg = (
+                "%r is not a valid docker image name. Image name"
+                "must start with an alphanumeric character and"
+                "can then use _ . or - in addition to alphanumeric." % image_name
+            )
             raise argparse.ArgumentTypeError(msg)
+
         return image_name
 
     def get_argparser(self):
-        """Get arguments that may be used by repo2docker"""
+        """Get arguments that may be used by repo2docker.
+
+        Returns:
+            argparser: An ArgumentParser object that holds all the information
+                       necessary to parse the command line.
+
+        """
         argparser = argparse.ArgumentParser()
         argparser.add_argument(
             '--config',
             default='repo2docker_config.py',
-            help="Path to config file for repo2docker"
+            help="Path to config file for repo2docker",
         )
-
         argparser.add_argument(
             '--json-logs',
             default=False,
             action='store_true',
-            help='Emit JSON logs instead of human readable logs'
+            help='Emit JSON logs instead of human readable logs',
         )
-
         argparser.add_argument(
             'repo',
-            help=('Path to repository that should be built. Could be '
-                  'local path or a git URL.')
+            help=(
+                'Path to repository that should be built. Could be '
+                'local path or a git URL.'
+            ),
         )
-
         argparser.add_argument(
             '--image-name',
-            help=('Name of image to be built. If unspecified will be '
-                  'autogenerated'),
-            type=self.validate_image_name
+            help=('Name of image to be built. If unspecified will be autogenerated'),
+            type=self.validate_image_name,
         )
-
         argparser.add_argument(
-            '--ref',
-            help='If building a git url, which ref to check out'
+            '--ref', help='If building a git url, which ref to check out'
         )
-
         argparser.add_argument(
-            '--debug',
-            help="Turn on debug logging",
-            action='store_true',
+            '--debug', help="Turn on debug logging", action='store_true'
         )
-
         argparser.add_argument(
             '--no-build',
             dest='build',
             action='store_false',
-            help=('Do not actually build the image. Useful in conjunction '
-                  'with --debug.')
+            help=(
+                'Do not actually build the image. Useful in conjunction '
+                'with --debug.'
+            ),
         )
-
         argparser.add_argument(
             '--build-memory-limit',
-            help='Total Memory that can be used by the docker build process'
+            help='Total Memory that can be used by the docker build process',
         )
-
         argparser.add_argument(
             'cmd',
             nargs=argparse.REMAINDER,
-            help='Custom command to run after building container'
+            help='Custom command to run after building container',
         )
-
         argparser.add_argument(
             '--no-run',
             dest='run',
             action='store_false',
-            help='Do not run container after it has been built'
+            help='Do not run container after it has been built',
         )
-
         argparser.add_argument(
-            '--publish', '-p',
+            '--publish',
+            '-p',
             dest='ports',
             action='append',
-            help=('Specify port mappings for the image. Needs a command to '
-                  'run in the container.')
+            help=(
+                'Specify port mappings for the image. Needs a command to '
+                'run in the container.'
+            ),
         )
-
         argparser.add_argument(
-            '--publish-all', '-P',
+            '--publish-all',
+            '-P',
             dest='all_ports',
             action='store_true',
-            help='Publish all exposed ports to random host ports.'
+            help='Publish all exposed ports to random host ports.',
         )
-
         argparser.add_argument(
             '--no-clean',
             dest='clean',
             action='store_false',
-            help="Don't clean up remote checkouts after we are done"
+            help="Don't clean up remote checkouts after we are done",
         )
-
         argparser.add_argument(
             '--push',
             dest='push',
             action='store_true',
-            help='Push docker image to repository'
+            help='Push docker image to repository',
         )
-
         argparser.add_argument(
-            '--volume', '-v',
+            '--volume',
+            '-v',
             dest='volumes',
             action='append',
             help='Volumes to mount inside the container, in form src:dest',
-            default=[]
+            default=[],
         )
-
         argparser.add_argument(
-            '--user-id',
-            help='User ID of the primary user in the image',
-            type=int
+            '--user-id', help='User ID of the primary user in the image', type=int
         )
-
         argparser.add_argument(
-            '--user-name',
-            help='Username of the primary user in the image',
+            '--user-name', help='Username of the primary user in the image'
         )
-
         argparser.add_argument(
-            '--env', '-e',
+            '--env',
+            '-e',
             dest='environment',
             action='append',
             help='Environment variables to define at container run time',
-            default=[]
+            default=[],
         )
-
         argparser.add_argument(
-            '--appendix',
-            type=str,
-            help=self.traits()['appendix'].help,
+            '--appendix', type=str, help=self.traits()['appendix'].help
         )
         return argparser
 
     def json_excepthook(self, etype, evalue, traceback):
         """Called on an uncaught exception when using json logging
 
-        Avoids non-JSON output on errors when using --json-logs
+        Avoids non-JSON output on errors when using `--json-logs`
+
+        Args:
+            etype (str): error type
+            evalue (str): error value
+            traceback (str): detailed error information
+
         """
-        self.log.error("Error during build: %s", evalue,
-                       exc_info=(etype, evalue, traceback),
-                       extra=dict(phase='failed'))
+        self.log.error(
+            "Error during build: %s",
+            evalue,
+            exc_info=(etype, evalue, traceback),
+            extra=dict(phase='failed'),
+        )
 
     def initialize(self, argv=None):
         """Init repo2docker configuration before start"""
         if argv is None:
             argv = sys.argv[1:]
-        args = self.get_argparser().parse_args(argv)
 
+        args = self.get_argparser().parse_args(argv)
         if args.debug:
             self.log_level = logging.DEBUG
 
         self.load_config_file(args.config)
+
         if args.appendix:
             self.appendix = args.appendix
 
@@ -394,9 +409,7 @@ class Repo2Docker(Application):
             # remove the additional newline from the stream handler
             self.log.handlers[0].terminator = ''
             # We don't want a [Repo2Docker] on all messages
-            self.log.handlers[0].formatter = logging.Formatter(
-                fmt='%(message)s'
-            )
+            self.log.handlers[0].formatter = logging.Formatter(fmt='%(message)s')
 
         if args.image_name:
             self.output_image_spec = args.image_name
@@ -419,40 +432,41 @@ class Repo2Docker(Application):
             self.run = False
             self.push = False
 
-        # check against self.run and not args.run as self.run is false on
-        # --no-build
+        # check against `self.run` and not `args.run`
+        # as `self.run` is `false` on `--no-build`
         if args.volumes and not self.run:
             # Can't mount if we aren't running
-            print('To Mount volumes with -v, you also need to run the '
-                  'container')
+            print('To mount volumes with -v, you also need to run the container')
             sys.exit(1)
-
         for v in args.volumes:
             src, dest = v.split(':')
             self.volumes[src] = dest
-
         self.run_cmd = args.cmd
 
         if args.all_ports and not self.run:
-            print('To publish user defined port mappings, the container must '
-                  'also be run')
+            print(
+                'To publish user defined port mappings, the container must '
+                'also be run'
+            )
             sys.exit(1)
-
         if args.ports and not self.run:
-            print('To publish user defined port mappings, the container must '
-                  'also be run')
+            print(
+                'To publish user defined port mappings, the container must '
+                'also be run'
+            )
             sys.exit(1)
-
         if args.ports and not self.run_cmd:
-            print('To publish user defined port mapping, user must specify '
-                  'the command to run in the container')
+            print(
+                'To publish user defined port mapping, user must specify '
+                'the command to run in the container'
+            )
             sys.exit(1)
-
         self.ports = validate_and_generate_port_mapping(args.ports)
         self.all_ports = args.all_ports
 
         if args.user_id:
             self.user_id = args.user_id
+
         if args.user_name:
             self.user_name = args.user_name
 
@@ -460,15 +474,17 @@ class Repo2Docker(Application):
             self.build_memory_limit = args.build_memory_limit
 
         if args.environment and not self.run:
-            print('To specify environment variables, you also need to run '
-                  'the container')
+            print(
+                'To specify environment variables, you also need to run '
+                'the container'
+            )
             sys.exit(1)
-
         self.environment = args.environment
 
     def push_image(self):
         """Push docker image to registry"""
-        client = docker.APIClient(version='auto', **kwargs_from_env())
+        client = docker.APIClient(version='auto', ** kwargs_from_env())
+
         # Build a progress setup for each layer, and only emit per-layer
         # info every 1.5s
         layers = {}
@@ -480,23 +496,24 @@ class Repo2Docker(Application):
                 sys.exit(1)
             if 'id' not in progress:
                 continue
+
             if 'progressDetail' in progress and progress['progressDetail']:
                 layers[progress['id']] = progress['progressDetail']
             else:
                 layers[progress['id']] = progress['status']
             if time.time() - last_emit_time > 1.5:
-                self.log.info('Pushing image\n',
-                              extra=dict(progress=layers, phase='pushing'))
+                self.log.info(
+                    'Pushing image\n', extra=dict(progress=layers, phase='pushing')
+                )
                 last_emit_time = time.time()
 
     def run_image(self):
         """Run docker container from built image"""
         client = docker.from_env(version='auto')
+
         if not self.run_cmd:
             port = str(self._get_free_port())
-
-            run_cmd = ['jupyter', 'notebook', '--ip', '0.0.0.0',
-                       '--port', port]
+            run_cmd = ['jupyter', 'notebook', '--ip', '0.0.0.0', '--port', port]
             ports = {'%s/tcp' % port: port}
         else:
             # run_cmd given by user, if port is also given then pass it on
@@ -505,19 +522,18 @@ class Repo2Docker(Application):
                 ports = self.ports
             else:
                 ports = {}
+
         container_volumes = {}
         if self.volumes:
             api_client = docker.APIClient(
-                version='auto',
-                **docker.utils.kwargs_from_env()
+                version='auto', ** docker.utils.kwargs_from_env()
             )
             image = api_client.inspect_image(self.output_image_spec)
             image_workdir = image['ContainerConfig']['WorkingDir']
-
             for k, v in self.volumes.items():
                 container_volumes[os.path.abspath(k)] = {
                     'bind': v if v.startswith('/') else os.path.join(image_workdir, v),
-                    'mode': 'rw'
+                    'mode': 'rw',
                 }
 
         container = client.containers.run(
@@ -527,21 +543,18 @@ class Repo2Docker(Application):
             detach=True,
             command=run_cmd,
             volumes=container_volumes,
-            environment=self.environment
+            environment=self.environment,
         )
         while container.status == 'created':
             time.sleep(0.5)
             container.reload()
-
         try:
             for line in container.logs(stream=True):
-                self.log.info(line.decode('utf-8'),
-                              extra=dict(phase='running'))
+                self.log.info(line.decode('utf-8'), extra=dict(phase='running'))
         finally:
             container.reload()
             if container.status == 'running':
-                self.log.info('Stopping container...\n',
-                              extra=dict(phase='running'))
+                self.log.info('Stopping container...\n', extra=dict(phase='running'))
                 container.kill()
             exit_code = container.attrs['State']['ExitCode']
             container.remove()
@@ -553,6 +566,7 @@ class Repo2Docker(Application):
         Hacky method to get a free random port on local host
         """
         import socket
+
         s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         s.bind(("", 0))
         port = s.getsockname()[1]
@@ -564,15 +578,17 @@ class Repo2Docker(Application):
         # Check if r2d can connect to docker daemon
         if self.build:
             try:
-                client = docker.APIClient(version='auto',
-                                          **kwargs_from_env())
+                client = docker.APIClient(version='auto', ** kwargs_from_env())
                 del client
             except DockerException as e:
-                print("Docker client initialization error. Check if docker is"
-                      " running on the host.")
+                print(
+                    "Docker client initialization error. Check if docker is"
+                    " running on the host."
+                )
                 print(e)
                 if self.log_level == logging.DEBUG:
                     raise e
+
                 sys.exit(1)
 
         if self.repo_type == 'local':
@@ -583,52 +599,45 @@ class Repo2Docker(Application):
             else:
                 checkout_path = self.git_workdir
 
-        # keep as much as possible in the context manager to make sure we
-        # cleanup if things go wrong
+        # keep as much as possible in the context manager to make sure
+        # that we cleanup if things go wrong
         with maybe_cleanup(checkout_path, self.cleanup_checkout):
             if self.repo_type == 'remote':
                 self.fetch(self.repo, self.ref, checkout_path)
-
             os.chdir(checkout_path)
-
             for BP in self.buildpacks:
                 bp = BP()
                 if bp.detect():
                     picked_buildpack = bp
                     break
+
             else:
                 picked_buildpack = self.default_buildpack()
-
             picked_buildpack.appendix = self.appendix
-
-            self.log.debug(picked_buildpack.render(),
-                           extra=dict(phase='building'))
-
+            self.log.debug(picked_buildpack.render(), extra=dict(phase='building'))
             if self.build:
-                build_args = {
-                    'NB_USER': self.user_name,
-                    'NB_UID': str(self.user_id)
-                }
-                self.log.info('Using %s builder\n', bp.__class__.__name__,
-                              extra=dict(phase='building'))
-
-                for l in picked_buildpack.build(self.output_image_spec,
-                    self.build_memory_limit, build_args):
+                build_args = {'NB_USER': self.user_name, 'NB_UID': str(self.user_id)}
+                self.log.info(
+                    'Using %s builder\n',
+                    bp.__class__.__name__,
+                    extra=dict(phase='building'),
+                )
+                for l in picked_buildpack.build(
+                    self.output_image_spec, self.build_memory_limit, build_args
+                ):
                     if 'stream' in l:
-                        self.log.info(l['stream'],
-                                      extra=dict(phase='building'))
+                        self.log.info(l['stream'], extra=dict(phase='building'))
                     elif 'error' in l:
                         self.log.info(l['error'], extra=dict(phase='failure'))
                         sys.exit(1)
                     elif 'status' in l:
-                            self.log.info('Fetching base image...\r',
-                                          extra=dict(phase='building'))
+                        self.log.info(
+                            'Fetching base image...\r', extra=dict(phase='building')
+                        )
                     else:
-                        self.log.info(json.dumps(l),
-                                      extra=dict(phase='building'))
+                        self.log.info(json.dumps(l), extra=dict(phase='building'))
 
         if self.push:
             self.push_image()
-
         if self.run:
             self.run_image()
