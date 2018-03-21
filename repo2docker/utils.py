@@ -15,14 +15,13 @@ def execute_cmd(cmd, capture=False, **kwargs):
     if capture:
         kwargs['stdout'] = subprocess.PIPE
         kwargs['stderr'] = subprocess.STDOUT
-
     proc = subprocess.Popen(cmd, **kwargs)
-
     if not capture:
         # not capturing output, let subprocesses talk directly to terminal
         ret = proc.wait()
         if ret != 0:
             raise subprocess.CalledProcessError(ret, cmd)
+
         return
 
     # Capture output for logging.
@@ -42,9 +41,11 @@ def execute_cmd(cmd, capture=False, **kwargs):
         for c in iter(partial(proc.stdout.read, 1), b''):
             if c_last == b'\r' and buf and c != b'\n':
                 yield flush()
+
             buf.append(c)
             if c == b'\n':
                 yield flush()
+
             c_last = c
     finally:
         ret = proc.wait()
@@ -56,6 +57,7 @@ def execute_cmd(cmd, capture=False, **kwargs):
 def maybe_cleanup(path, cleanup=False):
     """Delete the directory at passed path if cleanup flag is True."""
     yield
+
     if cleanup:
         shutil.rmtree(path, ignore_errors=True)
 
@@ -97,7 +99,8 @@ def validate_and_generate_port_mapping(port_mapping):
         - `127.0.0.1::999` (even though docker accepts it)
         - other invalid ip address combinations
     """
-    reg_regex = re.compile(r"""
+    reg_regex = re.compile(
+        r"""
         ^(
         (                                                 # or capturing group
         (?:                                               # start capturing ip address of network interface
@@ -112,13 +115,17 @@ def validate_and_generate_port_mapping(port_mapping):
         (?:6553[0-5]|655[0-2][0-9]|65[0-4](\d){2}|6[0-4](\d){3}|[1-5](\d){4}|(\d){0,4})
         (?:/udp|/tcp)?
         )$
-        """, re.VERBOSE)
+        """,
+        re.VERBOSE,
+    )
     ports = {}
     if not port_mapping:
         return None
+
     for p in port_mapping:
         if reg_regex.match(p) is None:
             raise Exception('Invalid port mapping ' + str(p))
+
         # Do a reverse split twice on the separator :
         port_host = str(p).rsplit(':', 2)
         host = None
@@ -130,7 +137,6 @@ def validate_and_generate_port_mapping(port_mapping):
         else:
             host_port = port_host[0] if len(port_host[0]) > 0 else None
             container_port = port_host[1]
-
         if host is None:
             ports[str(container_port)] = host_port
         else:
@@ -165,7 +171,8 @@ def is_valid_docker_image_name(image_name):
         This pattern will not allow cases like `TEST.com/name:latest` though
         docker considers it a valid tag.
     """
-    reference_regex = re.compile(r"""
+    reference_regex = re.compile(
+        r"""
         ^  # Anchored at start and end of string
 
         (  # Start capturing name
@@ -214,8 +221,9 @@ def is_valid_docker_image_name(image_name):
         # optionally capture <digest-pattern>='@<digest>'
         (?:@[A-Za-z][A-Za-z0-9]*(?:[-_+.][A-Za-z][A-Za-z0-9]*)*[:][[:xdigit:]]{32,})?
         $
-        """, re.VERBOSE)
-
+        """,
+        re.VERBOSE,
+    )
     return reference_regex.match(image_name) is not None
 
 
@@ -231,14 +239,12 @@ class ByteSpecification(Integer):
 
     Stolen from JupyterHub
     """
-
     UNIT_SUFFIXES = {
         'K': 1024,
         'M': 1024 * 1024,
         'G': 1024 * 1024 * 1024,
-        'T': 1024 * 1024 * 1024 * 1024,
+        'T': 1024 * 1024 * 1024 * 1024
     }
-
     # Default to allowing None as a value
     allow_none = True
 
@@ -258,15 +264,15 @@ class ByteSpecification(Integer):
         except ValueError:
             raise TraitError(
                 '{val} is not a valid memory specification. '
-                'Must be an int or a string with suffix K, M, G, T'
-                .format(val=value)
+                'Must be an int or a string with suffix K, M, G, T'.format(val=value)
             )
+
         suffix = value[-1]
         if suffix not in self.UNIT_SUFFIXES:
             raise TraitError(
                 '{val} is not a valid memory specification. '
-                'Must be an int or a string with suffix K, M, G, T'
-                .format(val=value)
+                'Must be an int or a string with suffix K, M, G, T'.format(val=value)
             )
+
         else:
             return int(float(num) * self.UNIT_SUFFIXES[suffix])
